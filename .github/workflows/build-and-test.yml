@@ -11,5 +11,5 @@ jobs:
   build-and-test:
     uses: GTNewHorizons/GTNH-Actions-Workflows/.github/workflows/build-and-test.yml@master
     with:
-      java-version: '21'
+      java-versions: '["8", "17", "21"]'
     secrets: inherit

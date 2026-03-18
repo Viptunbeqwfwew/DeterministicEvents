@@ -1,0 +1,7 @@
+command.deterministicevents.usage=/deterministicevents [dump|reload]
+command.deterministicevents.permission=How did you even manage to run the command?
+command.deterministicevents.successfulDump=The dump was successfully created at path "%s"
+command.deterministicevents.successfulReload=The event handler sequence settings have been successfully reloaded.
+command.deterministicevents.processFailed=The command execution process failed, for details, see the logs.
+command.deterministicevents.exceptNumArg=Received an unexpected number of arguments.
+command.deterministicevents.exceptUnknownArg=Received an unexpected unknown argument.

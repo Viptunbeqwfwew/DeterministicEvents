@@ -14,11 +14,23 @@
 // along with this program. If not, see <https://www.gnu.org>.
 package com.viptunbeqwfwew.deterministicevents.common;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
-import com.viptunbeqwfwew.deterministicevents.common.group.*;
 import com.viptunbeqwfwew.deterministicevents.common.group.EventListener;
+import com.viptunbeqwfwew.deterministicevents.common.group.Group;
+import com.viptunbeqwfwew.deterministicevents.common.group.GroupPriority;
+import com.viptunbeqwfwew.deterministicevents.common.group.GroupSwitcherPhase;
+import com.viptunbeqwfwew.deterministicevents.common.group.IGroup;
+import com.viptunbeqwfwew.deterministicevents.common.group.IGroupRegister;
 import com.viptunbeqwfwew.deterministicevents.config.Config;
 
 import cpw.mods.fml.common.eventhandler.EventPriority;

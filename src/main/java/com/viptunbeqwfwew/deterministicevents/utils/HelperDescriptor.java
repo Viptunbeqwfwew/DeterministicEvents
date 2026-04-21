@@ -12,6 +12,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org>.
+
 package com.viptunbeqwfwew.deterministicevents.utils;
 
 import java.util.regex.Matcher;
@@ -19,7 +20,7 @@ import java.util.regex.Pattern;
 
 public class HelperDescriptor {
 
-    private static Pattern matcherEventType = Pattern.compile("\\((.*?)\\)$");
+    private static final Pattern matcherEventType = Pattern.compile("\\((.*?)\\)$");
 
     static public String extractEventType(String descriptor) {
         Matcher matcher = matcherEventType.matcher(descriptor);

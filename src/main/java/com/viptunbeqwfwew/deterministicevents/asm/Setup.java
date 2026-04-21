@@ -12,6 +12,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org>.
+
 package com.viptunbeqwfwew.deterministicevents.asm;
 
 import java.lang.reflect.Field;
@@ -26,6 +27,7 @@ import com.viptunbeqwfwew.deterministicevents.asm.transformer.SubscriptionTransf
 import cpw.mods.fml.relauncher.FMLRelaunchLog;
 import cpw.mods.fml.relauncher.IFMLCallHook;
 
+@SuppressWarnings("unused")
 public class Setup implements IFMLCallHook {
 
     private LaunchClassLoader classLoader;
@@ -46,6 +48,7 @@ public class Setup implements IFMLCallHook {
     @Override
     public Void call() throws Exception {
         if (!noTry) {
+            @SuppressWarnings("unchecked")
             List<IClassTransformer> list = (List<IClassTransformer>) transformers.get(classLoader);
             for (int i = 0; i < list.size(); i++) {
                 IClassTransformer transformer = list.get(i);

@@ -12,10 +12,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org>.
+
 package com.viptunbeqwfwew.deterministicevents.common.group;
 
 import java.util.ArrayList;
 
+import com.viptunbeqwfwew.deterministicevents.Constants;
 import com.viptunbeqwfwew.deterministicevents.DeterministicEvents;
 import com.viptunbeqwfwew.deterministicevents.common.AutoOptimizer;
 import com.viptunbeqwfwew.deterministicevents.config.Config;
@@ -30,13 +32,13 @@ public class EventListener implements IEventListener {
     private final AutoOptimizer search = new AutoOptimizer((short) 10, 60 * 10);
     private final String descriptor;
     private final EventPriority primePriority;
-    private final ArrayList<IEventListener> eventListeners = new ArrayList<IEventListener>();
+    private final ArrayList<IEventListener> eventListeners = new ArrayList<>();
     private boolean isMute = false;
     final private String[] muteDescriptors;
 
     public EventListener(String descriptor, EventPriority primePriority) {
         this.descriptor = descriptor;
-        muteDescriptors = Config.getParams("mute", descriptor);
+        muteDescriptors = Config.getParams(Constants.MUTE, descriptor);
         this.primePriority = primePriority;
     }
 
@@ -71,7 +73,7 @@ public class EventListener implements IEventListener {
     @Override
     public void invoke(Event event) {
         if (isMute) return;
-        ArrayList<EventListener> muteEvents = new ArrayList<EventListener>();
+        ArrayList<EventListener> muteEvents = new ArrayList<>();
         for (String muteDescriptor : muteDescriptors) {
             EventListener eventListener = DeterministicEvents.proxy.supervisor.search(muteDescriptor);
             if (!eventListener.isMute) {

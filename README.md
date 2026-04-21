@@ -19,21 +19,22 @@ config/deterministicevents с расширением
 *.dconf.
 
 Для конфигурационных файлов используется 6 
-ключевых слова (Комментарии не доступны):
+ключевых слова (Комментарии доступны через "//"):
+
+* order - модификатор флага, гарантирующий 
+  строгую последовательность. Запрещает 
+  дополнение параметров для объявленного объекта.
+
+* reverse - модификатор параметров объектов, который
+  буквально меняет местами имя объекта и его параметров.
 
 * mute - блокирует вызов обработчиков, перед
-  вхождением в целевой.
-
-* order - флаг для ключевого слова group,
-  что группа должна соблюдать строгий
-  порядок для своих обработчиков.
+  вхождением в целевой. Можно применить reverse.
 
 * group - указывает на то, как интерпретировать
   данные после себя. Используется для
   объединения несколько обработчиков в одну
-  субъединицу. Если не используете флаг
-  order, то можно дополнять её, множество
-  раз. Иначе, разрешено только одно объявление.
+  субъединицу. Можно применить order.
 
 * supergroup - указывает на то, в каком порядке
   располагать субъединицы групп. Только одно
@@ -48,15 +49,32 @@ config/deterministicevents с расширением
   Автоматически дополняет не достающие
   next_phase, с обеих сторон.
 
-* default_slot - опреляет место, кода попадут
+* default_slot - определяет место, куда попадут
   все обработчики, не вошедшие ни в одну из
   созданных групп. И все группы из родителей,
   место для которого вы не переопределили
   в текущей supergroup. Если отсутствует,
   автоматически вставится последним. Всего 5
-  на супергруппу, и по одному на фазу.
+  на супергруппу, по одному на фазу.
 
-Синтаксис выглядит так:
+* contract - объявляет контракт для группы.
+  Использует то же пространство имён, что и
+  группы.
+
+* condition - задаёт условие, при выполнении
+  которых, вызов будет отложен.
+
+* mapping - подтягивает данные из текущего 
+  события в отложенное.
+
+Если необходимо дополнить объект в другом месте. И он или его 
+модификатор этого не запрещает. То используйте стандартную структуру
+объявление.
+
+В случаи возникновения конфликтов, объекты будут уничтожены или
+приведены в стандартную форму.
+
+В большинстве случаях, синтаксис выглядит так:
 
     <модификатор> [тип] [имя] {
         <параметр1>
@@ -66,16 +84,36 @@ config/deterministicevents с расширением
         <параметрN>
     }
 
-Пример:
--------
+Контракты
+---------
 
-    mute com.kentington.thaumichorizons.common.lib.EventHandlerEntity@onPlayerHurt(net.minecraftforge.event.entity.living.LivingHurtEvent) {
-      betterquesting.handlers.EventHandler@onLivingDeath(net.minecraftforge.event.entity.living.LivingDeathEvent)
+Контракты - это объект, который позволяет _отложить_ обработку
+событие на другую супергруппу. Позволяет задать условие, в виде
+сопоставления хранящегося типа, для активации переноса обработки.
+И задать проброс данных из актуального события в отложенное.
+Также требует обязательного позиционирования в супергруппе,
+в противном случае откладывание не произойдёт.
+
+Декларация контракта:
+
+    contract [имя_контракта] [супергруппа] [имя_группы] [супергруппа]
+
+Пример
+------
+
+    // Подавление обработчика BetterQuesting для 
+    // предотвращения зачисление смерти в харкор режиме
+    reverse mute betterquesting.handlers.EventHandler@onLivingDeath(net.minecraftforge.event.entity.living.LivingDeathEvent) {
+      com.kentington.thaumichorizons.common.lib.EventHandlerEntity@onPlayerHurt(net.minecraftforge.event.entity.living.LivingHurtEvent)
     }
 
-    order group save_the_player {
+    // Группировка нескольких обработчиков в упорядоченную группу
+    order group save_the_player_main {
       com.emoniph.witchery.common.GenericEvents@onLivingHurt(net.minecraftforge.event.entity.living.LivingHurtEvent)
       twilightforest.TFEventListener@entityHurts(net.minecraftforge.event.entity.living.LivingHurtEvent)
+    }
+
+    group save_the_player_extra {
       com.kentington.thaumichorizons.common.lib.EventHandlerEntity@onPlayerHurt(net.minecraftforge.event.entity.living.LivingHurtEvent)
     }
     
@@ -86,12 +124,44 @@ config/deterministicevents с расширением
       next_phase // далее для NORMAL
       // default_slot
       next_phase // далее для LOW
-      save_the_player // Обработчики увидят фазу LOW
+      save_the_player_main // Обработчики увидят фазу LOW
+      save_the_player_extra
       // default_slot - все остальны обработчики LOW уйдут сюда,
       // определён системой не явно
       // next_phase
       // default_slot
-      // Вы можете резместить здесь группу, в любом месте.
+      // Вы можете резместить здесь группу, в любом месте
+    }
+
+    // Объявляем контракт для группы save_the_player_main
+    contract contract_save_the_player_main  openmods.entity.PlayerDamageEvent save_the_player_main  net.minecraftforge.event.entity.living.LivingHurtEvent
+    contract contract_save_the_player_extra openmods.entity.PlayerDamageEvent save_the_player_extra net.minecraftforge.event.entity.living.LivingHurtEvent
+
+    // Настраиваем условие перехода на сущность игрока
+    condition contract_save_the_player_main  {
+      entityLiving -> net.minecraft.entity.player.EntityPlayer
+    }
+
+    condition contract_save_the_player_extra {
+      entityLiving -> net.minecraft.entity.player.EntityPlayer
+    }
+
+    // Настраиваем пробрас значение из сурогатного события
+    mapping contract_save_the_player_extra {
+      // Влияет на данные во всех контрактов от LivingHurtEvent
+      amount -> ammount
+    }
+
+    group pre_save_the_player {
+      openblocks.enchantments.LastStandEnchantmentsHandler@onHurt(openmods.entity.PlayerDamageEvent)
+    }
+
+    supergroup openmods.entity.PlayerDamageEvent {
+      next_phase
+      next_phase
+      pre_save_the_player
+      contract_save_the_player_main // вставляются контракты как обычные группы
+      contract_save_the_player_extra
     }
 
 Тут для группы save_the_player определяем явный
@@ -101,9 +171,10 @@ config/deterministicevents с расширением
 2. Талисман жизни из Twilight Forest
 3. Лечебный чан из Thaumic Horizons
 
-P.s. Зачарование "Последний рубеж" (OpenBlocks), сюда не включён. Об этом позже.
+P.s. Зачарование "Последний рубеж" (OpenBlocks), сюда не включён.
+Он будет дальше.
 
-Так же тут есть пример с mute.
+Так же тут есть пример с mute, вместе с флагом reverse.
 
 Я изменил код Thaumic Horizons так, чтобы при срабатывании лечебного
 чана (исследование "Реинкарнация" в таумономиконе), я проходил
@@ -114,8 +185,28 @@ betterquesting (/bq_admin hardcore) столкнулся с уменьшение
 
 По тому, когда срабатывает лечебный чан, обработчик смерти из
 betterquesting, временно отправляется в бан.
+reverse позволяет указывать обработчики, при выполнении
+которых betterquesting не должен обрабатываться.
 
 Если просто умру, жизни уменьшатся.
+
+Про "Последний рубеж" (OpenBlocks):
+В данном примере обработчик «Последнего рубежа» вынесен в
+отдельную группу pre_save_the_player. Она работает через
+событие PlayerDamageEvent, что не позволяет внедрить его
+в последовательность LivingHurtEvent.
+
+Потому мы заключаем контракт с save_the_player, что позволяет
+перенести выполнение из LivingHurtEvent в PlayerDamageEvent.
+А это в свою очередь открывает возможность задать конкретные
+место в общей очереди.
+
+В итоге получаем следующее:
+
+1. Зачарование "Последний рубеж"
+2. Куклы из Witchery
+3. Талисман жизни из Twilight Forest
+4. Лечебный чан из Thaumic Horizons
 
 Функции
 -------
@@ -131,7 +222,7 @@ betterquesting, временно отправляется в бан.
 вне зависимости от режима читов. Для всех остальных, со
 2-го уровня прав.
 
-То есть, если баг возник из-за корявых приоритетов
+То есть, если возник баг из-за корявых приоритетов
 или из-за вызова других обработчиков внутри другого.
 
 То можно написать конфиг. И перезагрузить командой
@@ -142,13 +233,6 @@ betterquesting, временно отправляется в бан.
 Планы
 -----
 
-Бывает такое, что моды делают вставки
-вызова своих событий.
-
-Это как раз случай зачарование "Последний рубеж".
-
-Он внедряет код, который срабатывает позже LivingHurtEvent.
-И делает вставку там, где он уже учёл заблокированный урон.
-
-Так что планируется добавления механизма. Который позволит временно
-отложить вызов обработчиков.
+Усовершенствование механизмов контрактов. В частности:
+ - Условия откладывания
+ - Обновления данных в идущих последовательно контрактов

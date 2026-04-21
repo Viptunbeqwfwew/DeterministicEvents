@@ -12,12 +12,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org>.
+
 package com.viptunbeqwfwew.deterministicevents.common;
 
 public class AutoOptimizer {
 
     private boolean cached;
-    private final long[] unregister = new long[10];
+    private final long[] unregister;
     private short len = 0;
     private short cursor = 0;
     final private short size;
@@ -25,7 +26,8 @@ public class AutoOptimizer {
 
     public AutoOptimizer(short size, int time) {
         this.size = size;
-        this.time = time;
+        this.time = time * 1000;
+        unregister = new long[size];
     }
 
     public boolean isCached() {
@@ -40,12 +42,14 @@ public class AutoOptimizer {
 
     public boolean markTime() {
         long milis = System.currentTimeMillis();
-        if (len < size) unregister[len++] = milis;
-        else {
-            unregister[cursor] = milis;
-            cursor = (short) ((cursor + 1) % size);
+        if (len < size) {
+            unregister[len++] = milis;
+            return cached;
         }
-        if ((milis - unregister[cursor]) / 1000 > time) { // 10 minute
+
+        unregister[cursor] = milis;
+        cursor = (short) ((cursor + 1) % size);
+        if ((milis - unregister[cursor]) < time) {
             cached = true;
         }
         return cached;

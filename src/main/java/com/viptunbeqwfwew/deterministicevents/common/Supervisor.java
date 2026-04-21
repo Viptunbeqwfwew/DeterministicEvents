@@ -26,8 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.annotation.Nullable;
-
 import net.minecraftforge.common.MinecraftForge;
 
 import org.apache.commons.lang3.reflect.ConstructorUtils;
@@ -35,6 +33,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.jetbrains.annotations.Nullable;
 
 import com.gtnewhorizon.gtnhlib.eventbus.MethodInfo;
 import com.viptunbeqwfwew.deterministicevents.Constants;

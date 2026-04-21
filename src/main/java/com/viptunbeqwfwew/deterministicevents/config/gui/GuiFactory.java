@@ -12,6 +12,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org>.
+
 package com.viptunbeqwfwew.deterministicevents.config.gui;
 
 import java.util.Set;
@@ -21,6 +22,7 @@ import net.minecraft.client.gui.GuiScreen;
 
 import cpw.mods.fml.client.IModGuiFactory;
 
+@SuppressWarnings("unused")
 public class GuiFactory implements IModGuiFactory {
 
     @Override

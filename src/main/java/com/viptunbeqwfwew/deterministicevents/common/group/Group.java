@@ -12,6 +12,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org>.
+
 package com.viptunbeqwfwew.deterministicevents.common.group;
 
 import java.util.ArrayList;
@@ -20,20 +21,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jetbrains.annotations.Contract;
+
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.IEventListener;
 
 public class Group implements IGroupRegister {
 
-    private final ArrayList<EventListener> eventListeners = new ArrayList<EventListener>();
+    private final ArrayList<EventListener> eventListeners = new ArrayList<>();
     private final String[] eventDescriptors;
     private final boolean isOrder;
     private boolean rebuild = false;
     private boolean returnRebuild = false;
-
-    public Group() {
-        this(new String[0], false);
-    }
 
     public Group(String[] eventDescriptors, boolean isOrder) {
         this.eventDescriptors = eventDescriptors;
@@ -41,7 +40,6 @@ public class Group implements IGroupRegister {
     }
 
     @Override
-    @SuppressWarnings("NullPointerException")
     public boolean register(String descriptor, IEventListener eventListener, EventPriority primePriority) {
         returnRebuild = false;
         search(descriptor, false, primePriority).add(eventListener);
@@ -58,6 +56,7 @@ public class Group implements IGroupRegister {
         return search(descriptor, true, EventPriority.NORMAL);
     }
 
+    @Contract("_, false, _ -> !null")
     private EventListener search(String descriptor, boolean notForRegistration, EventPriority primePriority) {
         for (EventListener eventListener : eventListeners) if (descriptor.equals(eventListener.getDescriptor())) {
             if (notForRegistration) eventListener.markSearch();
@@ -93,7 +92,7 @@ public class Group implements IGroupRegister {
             return;
         }
 
-        Map<String, Integer> map = new HashMap<String, Integer>();
+        Map<String, Integer> map = new HashMap<>();
         for (int i = 0; i < eventDescriptors.length; i++) map.put(eventDescriptors[i], i);
 
         eventListeners.sort(Comparator.comparingInt(obj -> map.getOrDefault(obj.getDescriptor(), Integer.MAX_VALUE)));

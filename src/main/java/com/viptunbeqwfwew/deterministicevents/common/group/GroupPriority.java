@@ -12,21 +12,23 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org>.
+
 package com.viptunbeqwfwew.deterministicevents.common.group;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.jetbrains.annotations.Contract;
 
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.IEventListener;
 
 public class GroupPriority implements IGroupRegister {
 
-    private final ArrayList<EventListener> eventListeners = new ArrayList<EventListener>();
+    private final ArrayList<EventListener> eventListeners = new ArrayList<>();
     private boolean returnRebuild;
 
     @Override
-    @SuppressWarnings("NullPointerException")
     public boolean register(String descriptor, IEventListener eventListener, EventPriority primePriority) {
         returnRebuild = false;
         search(descriptor, false, primePriority).add(eventListener);
@@ -43,6 +45,7 @@ public class GroupPriority implements IGroupRegister {
         return search(descriptor, true, EventPriority.NORMAL);
     }
 
+    @Contract("_, false, _ -> !null")
     private EventListener search(String descriptor, boolean notForRegistration, EventPriority primePriority) {
         for (EventListener eventListener : eventListeners) if (descriptor.equals(eventListener.getDescriptor())) {
             if (notForRegistration) eventListener.markSearch();

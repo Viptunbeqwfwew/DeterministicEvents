@@ -12,6 +12,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org>.
+
 package com.viptunbeqwfwew.deterministicevents.common;
 
 import java.util.ArrayList;
@@ -25,10 +26,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import com.viptunbeqwfwew.deterministicevents.Constants;
+import com.viptunbeqwfwew.deterministicevents.DeterministicEvents;
+import com.viptunbeqwfwew.deterministicevents.common.contract.ContractContext;
+import com.viptunbeqwfwew.deterministicevents.common.contract.GroupContractProxy;
+import com.viptunbeqwfwew.deterministicevents.common.contract.GroupContractResolver;
 import com.viptunbeqwfwew.deterministicevents.common.group.EventListener;
 import com.viptunbeqwfwew.deterministicevents.common.group.Group;
 import com.viptunbeqwfwew.deterministicevents.common.group.GroupPriority;
 import com.viptunbeqwfwew.deterministicevents.common.group.GroupSwitcherPhase;
+import com.viptunbeqwfwew.deterministicevents.common.group.IActivatedGroup;
 import com.viptunbeqwfwew.deterministicevents.common.group.IGroup;
 import com.viptunbeqwfwew.deterministicevents.common.group.IGroupRegister;
 import com.viptunbeqwfwew.deterministicevents.config.Config;
@@ -50,17 +57,19 @@ public class Supergroup {
     final private ArrayList<Supergroup> childrens;
     final private LinkedHashSet<IGroup> cacheIGroup;
     final private Map<String, IGroupRegister> mapOwnGroup;
+    final private Map<String, IGroup> mapOwnResolver;
     private String[] sequence;
     private String[] ownGroup;
     private IEventListener[] cacheEventListeners;
 
     public Supergroup(Supergroup parent, String[] namesGroup) {
         this.parent = parent;
-        childrens = new ArrayList<Supergroup>();
+        childrens = new ArrayList<>();
         priorityGroups = new IGroupRegister[5];
         for (int i = 0; i < 5; i++) priorityGroups[i] = new GroupPriority();
-        cacheIGroup = new LinkedHashSet<IGroup>();
+        cacheIGroup = new LinkedHashSet<>();
         mapOwnGroup = new HashMap<>();
+        mapOwnResolver = new HashMap<>();
         sequence = compileSequenceNamesGroup(namesGroup);
         ownGroup = extractOwnGroup();
     }
@@ -198,6 +207,31 @@ public class Supergroup {
         childrens.add(supergroup);
     }
 
+    public IActivatedGroup convertToContract(ContractContext ctx, String nameGroup) {
+        if (ctx == null) return null;
+        rebuildGroups = true;
+        rebuild = true;
+        IGroupRegister groupOwn = mapOwnGroup.get(nameGroup);
+        mapOwnGroup.put(nameGroup, new GroupContractProxy(groupOwn, ctx));
+        return new GroupContractResolver(groupOwn, ctx);
+    }
+
+    public void clearResolver() {
+        mapOwnResolver.clear();
+    }
+
+    public void addResolver(String name, IActivatedGroup resolver) {
+        if (resolver == null) return;
+        rebuildGroups = true;
+        rebuild = true;
+        for (String nameGroup : sequence) if (nameGroup.equals(name)) {
+            resolver.activate();
+            mapOwnResolver.put(name, resolver);
+            return;
+        }
+        DeterministicEvents.LOG.warn("The resolver \"{}\" was not found in the group sequence.", name);
+    }
+
     public void register(String descriptor, IEventListener listener, EventPriority priority) {
         rebuild = rebuild | search(priority, descriptor).register(descriptor, listener, priority);
     }
@@ -216,9 +250,10 @@ public class Supergroup {
                 rebuildGroups = true;
                 rebuild = true;
                 IGroupRegister newIGroupRegister = new Group(
-                    Config.getParams("group", nameGroup),
+                    Config.getParams(Constants.GROUP, nameGroup),
                     Config.isOrdered(nameGroup));
                 mapOwnGroup.put(nameGroup, newIGroupRegister);
+                DeterministicEvents.proxy.supervisor.onCreateGroup(this, nameGroup, descriptor);
                 return newIGroupRegister;
             }
         return priorityGroups[priority.ordinal()];
@@ -230,8 +265,10 @@ public class Supergroup {
         return null;
     }
 
-    private IGroupRegister getGroupByName(String nameGroup) {
-        IGroupRegister group = mapOwnGroup.get(nameGroup);
+    private IGroup getGroupByName(String nameGroup) {
+        IGroup group = mapOwnGroup.get(nameGroup);
+        if (group != null) return group;
+        group = mapOwnResolver.get(nameGroup);
         if (group != null) return group;
         if (parent != null) return parent.getGroupByName(nameGroup);
         return null;
@@ -254,7 +291,7 @@ public class Supergroup {
 
                 phase++;
             } else {
-                IGroupRegister group = getGroupByName(nameGroup);
+                IGroup group = getGroupByName(nameGroup);
                 if (group != null) cacheIGroup.add(group);
             }
         }
@@ -292,7 +329,7 @@ public class Supergroup {
         ownGroup = extractOwnGroup();
         rebuildGroups = true;
 
-        List<EventListener> transit = new ArrayList<EventListener>();
+        List<EventListener> transit = new ArrayList<>();
         for (IGroupRegister group : mapOwnGroup.values()) group.dispose(transit);
         for (IGroupRegister group : priorityGroups) group.dispose(transit);
 

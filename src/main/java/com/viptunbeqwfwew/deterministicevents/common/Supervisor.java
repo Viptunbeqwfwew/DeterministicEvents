@@ -12,9 +12,11 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org>.
+
 package com.viptunbeqwfwew.deterministicevents.common;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,13 +28,19 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraftforge.common.MinecraftForge;
 
+import org.apache.commons.lang3.reflect.ConstructorUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
 import com.gtnewhorizon.gtnhlib.eventbus.MethodInfo;
+import com.viptunbeqwfwew.deterministicevents.Constants;
 import com.viptunbeqwfwew.deterministicevents.DeterministicEvents;
+import com.viptunbeqwfwew.deterministicevents.common.contract.ContractContext;
 import com.viptunbeqwfwew.deterministicevents.common.group.EventListener;
 import com.viptunbeqwfwew.deterministicevents.config.Config;
+import com.viptunbeqwfwew.deterministicevents.utils.HelperCodeGen;
 import com.viptunbeqwfwew.deterministicevents.utils.HelperDescriptor;
 
 import cpw.mods.fml.common.eventhandler.EventBus;
@@ -40,19 +48,20 @@ import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.IEventListener;
 import cpw.mods.fml.common.eventhandler.ListenerList;
 
+import javax.annotation.Nullable;
+
 public class Supervisor {
 
     final private HashMap<IEventListener, Triple<String, ListenerList, EventPriority>> capture = new HashMap<>();
     final private ArrayList<Triple<ListenerList, ListenerList, String>> captureSupergroup = new ArrayList<>();
-
+    private SupervisorClassLoader classLoader = new SupervisorClassLoader();
+    final private HashMap<String, ArrayList<Pair<Supergroup, Triple<String, String, String>>>> unresolvedContractGroups = new HashMap<>();
     private boolean isProhibitedRegistration = true;
-
     private boolean isProcessAllow = false;
     private final int redirectId;
-
     private String descriptor;
-    private final ConcurrentHashMap<String, com.viptunbeqwfwew.deterministicevents.common.group.EventListener> descriptorCache = new ConcurrentHashMap<String, com.viptunbeqwfwew.deterministicevents.common.group.EventListener>();
-    private final ConcurrentHashMap<IEventListener, com.viptunbeqwfwew.deterministicevents.common.group.EventListener> objCache = new ConcurrentHashMap<IEventListener, com.viptunbeqwfwew.deterministicevents.common.group.EventListener>();
+    private final ConcurrentHashMap<String, com.viptunbeqwfwew.deterministicevents.common.group.EventListener> descriptorCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<IEventListener, com.viptunbeqwfwew.deterministicevents.common.group.EventListener> objCache = new ConcurrentHashMap<>();
     private final LinkedHashMap<String, Supergroup> supergroups = new LinkedHashMap<>();
 
     public Supervisor() {
@@ -89,11 +98,14 @@ public class Supervisor {
             + ")";
     }
 
-    private void setSupergroupOnListenerList(ListenerList listenerList, Supergroup supergroup) {
+    private void setSupergroupOnListenerList(@SuppressWarnings("unused") ListenerList listenerList,
+        @SuppressWarnings("unused") Supergroup supergroup) {
         // Auto generate code
     }
 
-    private Supergroup getSupergroupFromListenerList(ListenerList listenerList) {
+    @SuppressWarnings("ConstantConditions")
+    @Nullable
+    private Supergroup getSupergroupFromListenerList(@SuppressWarnings("unused") ListenerList listenerList) {
         // Auto generate code
         return new Supergroup(null, new String[0]);
     }
@@ -135,8 +147,12 @@ public class Supervisor {
         objCache.clear();
         descriptorCache.clear();
 
+        for (Supergroup supergroup : supergroups.values()) supergroup.clearResolver();
+
+        classLoader = new SupervisorClassLoader();
+
         for (Map.Entry<String, Supergroup> entry : supergroups.entrySet()) entry.getValue()
-            .reload(Config.getParams("supergroup", entry.getKey()));
+            .reload(Config.getParams(Constants.SUPERGROUP, entry.getKey()));
     }
 
     public void putCache(String descriptor,
@@ -155,12 +171,25 @@ public class Supervisor {
             return;
         }
         Supergroup sParent = (parent != null) ? getSupergroupFromListenerList(parent) : null;
-        Supergroup newSupergroup = new Supergroup(sParent, Config.getParams("supergroup", eventTypeName));
+        Supergroup newSupergroup = new Supergroup(sParent, Config.getParams(Constants.SUPERGROUP, eventTypeName));
         setSupergroupOnListenerList(current, newSupergroup);
         if (sParent != null) sParent.addChildrenSupergroup(newSupergroup);
         supergroups.put(eventTypeName, newSupergroup);
+        if (unresolvedContractGroups.containsKey(eventTypeName)) {
+            for (Pair<Supergroup, Triple<String, String, String>> pair : unresolvedContractGroups.get(eventTypeName)) {
+                Triple<String, String, String> triple = pair.getRight();
+                newSupergroup.addResolver(
+                    triple.getLeft(),
+                    pair.getLeft()
+                        .convertToContract(
+                            getContractContext(triple.getLeft(), triple.getRight(), eventTypeName),
+                            triple.getMiddle()));
+            }
+            unresolvedContractGroups.remove(eventTypeName);
+        }
     }
 
+    @SuppressWarnings("unused")
     public boolean register(ListenerList current, int id, EventPriority priority, IEventListener listener) {
         if (id != redirectId) return false;
         if (isProhibitedRegistration) {
@@ -182,6 +211,7 @@ public class Supervisor {
         return true;
     }
 
+    @SuppressWarnings("unused")
     public boolean unregister(ListenerList current, int id, IEventListener listener) {
         if (id != redirectId || isProcessAllow) return false;
         if (isProhibitedRegistration) {
@@ -201,6 +231,7 @@ public class Supervisor {
         return true;
     }
 
+    @SuppressWarnings("unused")
     public boolean dispose(int id) {
         if (id != redirectId) return false;
         if (isProhibitedRegistration) {
@@ -224,6 +255,7 @@ public class Supervisor {
         return supergroup.search(descriptor);
     }
 
+    @SuppressWarnings("unused")
     public IEventListener[] getListeners(ListenerList current, int id) {
         if (id != redirectId || isProhibitedRegistration) return null;
         Supergroup supergroup = getSupergroupFromListenerList(current);
@@ -235,8 +267,62 @@ public class Supervisor {
     }
 
     public String[] getAllDescriptor() {
-        Set<String> res = new LinkedHashSet<String>();
+        Set<String> res = new LinkedHashSet<>();
         for (Supergroup supergroup : supergroups.values()) supergroup.getAllDescriptor(res);
         return res.toArray(new String[0]);
+    }
+
+    public void onCreateGroup(Supergroup sourceSupergroup, String nameGroup, String descriptor) {
+        String eventType = HelperDescriptor.extractEventType(descriptor);
+        Pair<String, String> target = Config.getTargetContract(new ImmutablePair<>(nameGroup, eventType));
+        if (target == null) return;
+        Supergroup supergroup = supergroups.get(target.getRight());
+        if (supergroup == null) {
+            ArrayList<Pair<Supergroup, Triple<String, String, String>>> tripleList = unresolvedContractGroups
+                .computeIfAbsent(target.getRight(), k -> new ArrayList<>());
+            tripleList.add(
+                new ImmutablePair<>(sourceSupergroup, new ImmutableTriple<>(target.getLeft(), nameGroup, eventType)));
+            return;
+        }
+        supergroup.addResolver(
+            target.getLeft(),
+            sourceSupergroup
+                .convertToContract(getContractContext(target.getLeft(), eventType, target.getRight()), nameGroup));
+    }
+
+    private ContractContext getContractContext(String contractName, String sourceEventType, String endEventType) {
+        Pair<String, String>[] conditions = Config.getPairParams(Constants.CONDITION, contractName);
+        Pair<String, String>[] mappings = Config.getPairParams(Constants.MAPPING, contractName);
+
+        String nameAutoGenClazz = Constants.PACKAGE_FOR_AUTO_GEN_CONTRACT + Constants.CONTRACT + "_" + contractName;
+        byte[] baseClass = HelperCodeGen.genContractContext(
+            nameAutoGenClazz.replace(".", "/"),
+            sourceEventType,
+            endEventType,
+            conditions,
+            mappings);
+
+        if (baseClass == null) return null;
+
+        Class<?> clazz = classLoader.define(nameAutoGenClazz, baseClass);
+
+        try {
+            return (ContractContext) ConstructorUtils.invokeConstructor(clazz, new Object[0]);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException
+            | InstantiationException e) {
+            DeterministicEvents.LOG.error("Something went wrong while trying to create the object.", e);
+            return null;
+        }
+    }
+
+    private static class SupervisorClassLoader extends ClassLoader {
+
+        public SupervisorClassLoader() {
+            super(Supervisor.class.getClassLoader());
+        }
+
+        public Class<?> define(String className, byte[] classBase) {
+            return defineClass(className, classBase, 0, classBase.length);
+        }
     }
 }

@@ -13,15 +13,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org>.
 
-package com.viptunbeqwfwew.deterministicevents;
+package com.viptunbeqwfwew.deterministicevents.common.group;
 
-public class Constants {
+public interface IActivatedGroup extends IGroup {
 
-    final static public String SUPERGROUP = "supergroup";
-    final static public String GROUP = "group";
-    final static public String MUTE = "mute";
-    final static public String CONTRACT = "contract";
-    final static public String CONDITION = "condition";
-    final static public String MAPPING = "mapping";
-    final static public String PACKAGE_FOR_AUTO_GEN_CONTRACT = "com.viptunbeqwfwew.deterministicevents.common.contract.autogen.";
+    void activate();
 }

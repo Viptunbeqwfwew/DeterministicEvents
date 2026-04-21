@@ -13,23 +13,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org>.
 
-package com.viptunbeqwfwew.deterministicevents.config;
+package com.viptunbeqwfwew.deterministicevents;
 
-import java.util.ArrayList;
-import java.util.List;
+public class Constants {
 
-import com.viptunbeqwfwew.deterministicevents.config.collector.TypeModification;
-
-public class DeclarativeObject {
-
-    final public String type;
-    final public String name;
-    final public TypeModification[] modifications;
-    final public List<String> params = new ArrayList<>();
-
-    public DeclarativeObject(String type, String name, TypeModification[] modifications) {
-        this.type = type;
-        this.name = name;
-        this.modifications = modifications;
-    }
+    final static public String SUPERGROUP = "supergroup";
+    final static public String GROUP = "group";
+    final static public String MUTE = "mute";
+    final static public String CONTRACT = "contract";
+    final static public String CONDITION = "condition";
+    final static public String MAPPING = "mapping";
 }

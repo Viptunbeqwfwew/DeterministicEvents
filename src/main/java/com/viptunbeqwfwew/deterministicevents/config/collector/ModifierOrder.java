@@ -13,23 +13,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org>.
 
-package com.viptunbeqwfwew.deterministicevents.config;
+package com.viptunbeqwfwew.deterministicevents.config.collector;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
-import com.viptunbeqwfwew.deterministicevents.config.collector.TypeModification;
+import com.viptunbeqwfwew.deterministicevents.config.DeclarativeObject;
 
-public class DeclarativeObject {
+public class ModifierOrder implements IModifier {
 
-    final public String type;
-    final public String name;
-    final public TypeModification[] modifications;
-    final public List<String> params = new ArrayList<>();
+    final private Set<String> flags;
+    final private NameSpace nameSpace;
 
-    public DeclarativeObject(String type, String name, TypeModification[] modifications) {
-        this.type = type;
-        this.name = name;
-        this.modifications = modifications;
+    public ModifierOrder(Set<String> flags, NameSpace nameSpace) {
+        this.flags = flags;
+        this.nameSpace = nameSpace;
+    }
+
+    @Override
+    public void apply(DeclarativeObject object) {
+        flags.add(object.name);
+        nameSpace.addImmutableName(object.name);
     }
 }

@@ -13,23 +13,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org>.
 
-package com.viptunbeqwfwew.deterministicevents.config;
+package com.viptunbeqwfwew.deterministicevents.config.parse;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.io.StreamTokenizer;
 
-import com.viptunbeqwfwew.deterministicevents.config.collector.TypeModification;
+public interface INameParse {
 
-public class DeclarativeObject {
-
-    final public String type;
-    final public String name;
-    final public TypeModification[] modifications;
-    final public List<String> params = new ArrayList<>();
-
-    public DeclarativeObject(String type, String name, TypeModification[] modifications) {
-        this.type = type;
-        this.name = name;
-        this.modifications = modifications;
-    }
+    String parse(StreamTokenizer streamTokenizer) throws IOException;
 }

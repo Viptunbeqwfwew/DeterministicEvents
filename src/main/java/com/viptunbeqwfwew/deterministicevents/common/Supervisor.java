@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
+
 import net.minecraftforge.common.MinecraftForge;
 
 import org.apache.commons.lang3.reflect.ConstructorUtils;
@@ -47,8 +49,6 @@ import cpw.mods.fml.common.eventhandler.EventBus;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.IEventListener;
 import cpw.mods.fml.common.eventhandler.ListenerList;
-
-import javax.annotation.Nullable;
 
 public class Supervisor {
 

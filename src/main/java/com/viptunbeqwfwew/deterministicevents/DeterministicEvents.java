@@ -12,6 +12,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org>.
+
 package com.viptunbeqwfwew.deterministicevents;
 
 import java.io.File;
@@ -59,17 +60,20 @@ public class DeterministicEvents extends DummyModContainer {
         }
     }
 
+    @SuppressWarnings("UnstableApiUsage")
     @Override
     public boolean registerBus(EventBus bus, LoadController controller) {
         bus.register(this);
         return true;
     }
 
+    @SuppressWarnings({ "unused", "UnstableApiUsage" })
     @Subscribe
     public void preInit(FMLPreInitializationEvent event) {
         proxy.preInit(event);
     }
 
+    @SuppressWarnings({ "unused", "UnstableApiUsage" })
     @Subscribe
     public void startServer(FMLServerStartingEvent event) {
         proxy.startServer(event);
